@@ -22,10 +22,13 @@
 
         <script src="build/three.js"></script>
 
+
+		<script src="js/libs/inflate.min.js"></script>
+        <script src="js/loaders/FBXLoader.js"></script>
+
         <script src="js/libs/stats.min.js"></script>
         <script src="js/libs/dat.gui.min.js"></script>
 		<script src="js/WebGL.js"></script>
-
 		<script>
             if ( WEBGL.isWebGLAvailable() === false ) {
 
@@ -41,7 +44,8 @@
             var mouseX = 0, mouseY = 0;
             var windowHalfX = window.innerWidth / 2;
             var windowHalfY = window.innerHeight / 2;
-            var gui;
+            var gui, sound;
+            var prevEvent, currentEvent;
             var settings, pointlight, pos = new THREE.Vector3(), hexaY;
 			var mixer, uniforms, centerdist, fontgeo;
             var maxcenterdist = Math.sqrt(windowHalfX * windowHalfX + windowHalfY * windowHalfY);
@@ -88,7 +92,22 @@
                 //scene.add(pointlight);
                 //var helper = new THREE.PointLightHelper(pointlight, 3);
                 //scene.add(helper);
+                //AUDIO FROM LEO
+                // create an AudioListener and add it to the camera
+                //var listener = new THREE.AudioListener();
+                //camera.add( listener );
 
+                // create a global audio source
+                //sound = new THREE.Audio( listener );
+
+                // load a sound and set it as the Audio object's buffer
+                /*var audioLoader = new THREE.AudioLoader();
+                audioLoader.load( 'son_hexa.wav', function( buffer ) {
+                	sound.setBuffer( buffer );
+                	sound.setLoop( true );
+                	sound.setVolume( 0.5 );
+                	sound.play();
+                });*/
                 // model
                 // declaring hexa object (group object containing two child: the extrude and the top cup)
 
@@ -115,10 +134,46 @@
                     theta_next = (j / segments) * Math.PI * 2.0;
                     x_next = radius * Math.cos(theta_next);
                     y_next = radius * Math.sin(theta_next);
-                    hexaShape.moveTo(0, 0);
+                    hexaShape.moveTo(x, y);
                     hexaShape.lineTo(x, y);
                     hexaShape.lineTo(x_next, y_next);
                 }
+
+                var hexaShape2 = new THREE.Shape();
+                radius = 20;
+                segments = 6;
+                var theta_next, x_next, y_next, j;
+                for (var i = 0; i < segments; i++) {
+                    theta = ((i + 1) / segments) * Math.PI * 2.0;
+                    x = radius * Math.cos(theta);
+                    y = radius * Math.sin(theta);
+                    j = i + 2;
+                    if( (j - 1) === segments ) j = 1;
+                    theta_next = (j / segments) * Math.PI * 2.0;
+                    x_next = radius * Math.cos(theta_next);
+                    y_next = radius * Math.sin(theta_next);
+                    hexaShape2.moveTo(x, y);
+                    hexaShape2.lineTo(x, y);
+                    hexaShape2.lineTo(x_next, y_next);
+                }
+                var tmp = new THREE.Shape();
+                radius = 16;
+                segments = 6;
+                var theta_next, x_next, y_next, j;
+                for (var i = 0; i < segments; i++) {
+                    theta = ((i + 1) / segments) * Math.PI * 2.0;
+                    x = radius * Math.cos(theta);
+                    y = radius * Math.sin(theta);
+                    j = i + 2;
+                    if( (j - 1) === segments ) j = 1;
+                    theta_next = (j / segments) * Math.PI * 2.0;
+                    x_next = radius * Math.cos(theta_next);
+                    y_next = radius * Math.sin(theta_next);
+                    tmp.moveTo(x, y);
+                    tmp.lineTo(x, y);
+                    tmp.lineTo(x_next, y_next);
+                }
+                hexaShape2.holes.push(tmp);
 
                 var extrudeSettings = {
                     depth: 16,
@@ -128,7 +183,7 @@
                 settings = { 'emiss': 0.2 };
 
                 var geometry = new THREE.ExtrudeBufferGeometry( hexaShape, extrudeSettings );
-
+                var geometry2 = new THREE.ExtrudeBufferGeometry( hexaShape2, extrudeSettings);
                 for ( var j = -1 * maxX/2; j < maxX/2; j ++ ) {
                       for ( var i = -1 * maxZ/2; i < maxZ/2; i ++ ) {
                            var hexacpy = new THREE.Object3D();
@@ -143,7 +198,7 @@
 
                 //loading font
 
-                var fontloader = new THREE.FontLoader();
+                /*var fontloader = new THREE.FontLoader();
                 fontloader.load( 'lol.json', function ( font ) {
 
                 	    fontgeo = new THREE.TextGeometry( 'Entrer', {
@@ -153,14 +208,34 @@
                 		curveSegments: 20,
                 		bevelEnabled: true,
                 	} );
-                } );
+                } );*/
+                /*
                 var fontmat = new THREE.MeshStandardMaterial({ color : 0xff7f00, map : mapextrude, emissive : 0xff7723 , emissiveIntensity: settings['emiss']} );
                 var textmesh = new THREE.Mesh(fontgeo, fontmat);
                 textmesh.scale.set(90,90,90);
-                textmesh.position.set(0,40,0);
+                textmesh.position.set(0,40,0);*/
                 //textmesh.position.y += 4;
+
+                /*var loader = new THREE.FBXLoader();
+                loader.load( 'text_fbx.fbx', function ( object ) {
+                    object.scale.set(1000,1000,1000);
+                    object.position.set(0,200,0);
+                    object.mixer = new THREE.AnimationMixer( object );
+                    mixers.push( object.mixer );
+                    var action = object.mixer.clipAction( object.animations[ 0 ] );
+                    action.play();
+                    object.traverse( function ( child ) {
+                        if ( child.isMesh ) {
+                            child.castShadow = true;
+                            child.receiveShadow = true;
+                        }
+                    scene.add( object );
+                } );
+            } );*/
+
+
                 var hexacpy = new THREE.Object3D();
-                var extrude = new THREE.Mesh(geometry, [new THREE.MeshStandardMaterial({color : 0x666666, emissive: 0x666666, metalness: 1}), new THREE.MeshStandardMaterial({ color : 0xff7f00, map : mapextrude, emissive : 0xff7723 , emissiveIntensity: settings['emiss']} )]);
+                var extrude = new THREE.Mesh(geometry2, [new THREE.MeshStandardMaterial({color : 0x666666, emissive: 0x666666, metalness: 1}), new THREE.MeshStandardMaterial({ color : 0xff7f00, map : mapextrude, emissive : 0xff7723 , emissiveIntensity: settings['emiss']} )]);
                 extrude.rotation.set(Math.PI/2, 0, 0);
                 extrude.scale.set(5,5,5);
                 extrude.position.set(0, 0, 0);
@@ -170,7 +245,7 @@
                 extrude2.position.set(0, 0, 0);
                 hexacpy.add(extrude);
                 hexacpy.add(extrude2);
-                hexacpy.add(textmesh);
+                //hexacpy.add(textmesh);
                 scene.add(hexacpy);
                 hexa.push(hexacpy);
                 for (var i = 4; i < scene.children.length; i++) {
@@ -192,6 +267,7 @@
                 folder.add( settings, 'emiss', 0, 1, 0.01 );
 
    				document.addEventListener( 'mousemove', onDocumentMouseMove, false );
+                document.addEventListener( 'mousedown', onDocumentMouseDown, false );
 				window.addEventListener( 'resize', onWindowResize, false );
 
 				// stats
@@ -232,12 +308,7 @@
                 }
                 var clipAction = mixer.clipAction( clip, hextoanim );
                 clipAction.setLoop(THREE.LoopPingPong, 2);
-                /*if (actvlight) {
-                    hextoanim.children[1].visible = true;
-                    mixer.addEventListener( 'finished', function( e ) {e.action.getRoot().children[1].visible = false;} );
-                }*/
                 clipAction.play();
-                //hextoanim.children[1].visible = false;
             }
 
 			function onWindowResize() {
@@ -305,15 +376,54 @@
                        }
                        pointlight.visible = true;
                        intersects[0].object.parent.add(pointlight);
-                       /*var distance = ( intersects[0].object.parent.position.z - camera.position.z ) / vec.z;;
+                       //var distance = ( intersects[0].object.parent.position.z - camera.position.z ) / vec.z;;
 
-                       pos.copy( camera.position ).add( vec.multiplyScalar( distance ) );
-                       hexaY = intersects[0].object.parent.position.y + 3;*/
+                       //pos.copy( camera.position ).add( vec.multiplyScalar( distance ) );
+                       //hexaY = intersects[0].object.parent.position.y + 3;
 
                        //pointlight.position.set(intersects[0].object.parent.position.x, intersects[0].object.parent.position.y + 5, intersects[0].object.parent.position.z);
-		            }
+
+
+                       //currentEvent = event;
+                    }
 				}
 			}
+
+            function onDocumentMouseDown( event ) {
+                raycaster.setFromCamera( mouse, camera );
+                var intersects = raycaster.intersectObjects( [hexa[0]], true );
+		        if (intersects[0]) {
+                    var arrKF = new Array();
+                    var arrPOS = new Array();
+
+                    for (var i = 0; i < 40; i++) {
+                        arrKF.push(i);
+                    }
+                    var look = new THREE.Vector3(scene.position);
+
+                    for (var i = 40/2; i != 0; i--) {
+                        arrPOS.push(0);
+                        arrPOS.push(hexa[0].position.y * i / (40/2));
+                        arrPOS.push(0);
+                    }
+
+                    for (var i = 0; i < 40/2; i++) {
+                        arrPOS.push(0);
+                        arrPOS.push(hexa[0].position.y * i / (40/2));
+                        arrPOS.push(0);
+                    }
+
+
+                    var positionKF = new THREE.VectorKeyframeTrack( '.position', arrKF, arrPOS );
+                    var clip = new THREE.AnimationClip( 'Action', 1.5, [positionKF] );
+                    if (!mixer) {
+                        mixer = new THREE.AnimationMixer( hexa[0] );
+                    }
+                    var clipAction = mixer.clipAction( clip, hexa[0] );
+                    clipAction.setLoop(THREE.LoopPingPong, 2);
+                    clipAction.play();
+                }
+            }
 
 			function animate() {
 
@@ -338,20 +448,40 @@
                     //hexa[i - 4].children[1].visible = false;
                 }
                 //(maxcenterdist - centerdist)/maxcenterdist *(maxcenterdist - centerdist)/maxcenterdist * 2
-                hexa[0].children[0].position.y += (100 - Math.sqrt((( mouseX ) * ( mouseX )  + ( mouseY ) * ( mouseY ))) -  40) * 0.02 * 1.2;
+                hexa[0].children[0].position.y += (100 - Math.sqrt((( mouseX ) * ( mouseX )  + ( mouseY ) * ( mouseY ))) -  20) * 0.02 * 1.2;
                 if (hexa[0].children[0].position.y > 20 * 0.85)
                     hexa[0].children[0].position.y = 20 * 0.85;
                 if (hexa[0].children[0].position.y < 0)
                     hexa[0].children[0].position.y = 0;
-                hexa[0].children[1].position.y += (100 - Math.sqrt((( mouseX ) * ( mouseX )  + ( mouseY ) * ( mouseY ))) -  40) * 0.02 * 1.2 * 1.5;
+                hexa[0].children[1].position.y += (100 - Math.sqrt((( mouseX ) * ( mouseX )  + ( mouseY ) * ( mouseY ))) -  20) * 0.02 * 1.2 * 1.5;
                 if (hexa[0].children[1].position.y > 30 * 0.85)
                     hexa[0].children[1].position.y = 30 * 0.85;
                 if (hexa[0].children[1].position.y < 0)
                     hexa[0].children[1].position.y = 0;
 
+
+
+                /*if(prevEvent && currentEvent) {
+                    var maxSpeed=0,prevSpeed=0,maxPositiveAcc=0,maxNegativeAcc=0;
+                    var movementX=Math.abs(currentEvent.screenX-prevEvent.screenX);
+                    var movementY=Math.abs(currentEvent.screenY-prevEvent.screenY);
+                    var movement=Math.sqrt(movementX*movementX+movementY*movementY);
+                    //speed=movement/100ms= movement/0.1s= 10*movement/s
+                    var speed=10*movement;//current speed
+
+                    speed>maxSpeed?(maxSpeed=speed):maxSpeed;
+                    var acceleration=10*(speed-prevSpeed);
+                }
+                prevEvent=currentEvent;
+                prevSpeed=speed;
+                if(speed < 1)
+                    speed = 1;
+                console.log(1/(speed));
+                sound.setVolume(100 - 100/(speed));
+                */
+
                 renderer.render(scene, camera);
                 stats.update();
-
 			}
 		</script>
 	</body>
